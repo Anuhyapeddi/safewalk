@@ -1,38 +1,65 @@
-.App {
-  text-align: center;
+html, body, #root, .App {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.sidebar {
+  padding: 10px;
+  background-color: #f9f9f9;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+input {
+  display: block;
+  margin: 10px 0;
+  padding: 8px;
+  width: 300px;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.app-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  height: 100vh;
 }
 
-.App-link {
-  color: #61dafb;
+.main-content {
+  display: flex;
+  flex: 1;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.sidebar {
+  width: 250px;
+  padding: 20px;
+  background-color: #eaeaea;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  
 }
+
+.sidebar input {
+  padding: 15px;
+  font-size: 15px;
+  border-radius: 50px;
+}
+.sidebar button {
+  padding: 15px;
+  font-size: 15px;
+  border-radius: 50px;
+  background-color: #007bff; /* blue */
+  color: white;              /* text color */
+  border: none;              /* optional: removes the default border */
+  cursor: pointer;           /* optional: shows a pointer on hover */
+}
+.recent-searches {
+  flex: 1;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 20px;
+
+}
+
+.map-view {
+  flex: 1;
+}
+
