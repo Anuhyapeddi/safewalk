@@ -1,5 +1,8 @@
 # Getting Started with Create React App
 
+First things first, 
+Go to your .env file and replace the GOOGLE_MAPS_API_KEY with yours
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
