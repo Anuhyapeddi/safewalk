@@ -29,15 +29,19 @@ function MainPage() {
 
   const handleSourceChange = () => {
     const place = sourceRef.current.getPlace();
-    if (place && place.formatted_address) {
-      setSource(place.formatted_address);
+    if (place?.geometry?.location) {
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      setSource(`${lat},${lng}`);
     }
   };
 
   const handleDestinationChange = () => {
     const place = destinationRef.current.getPlace();
-    if (place && place.formatted_address) {
-      setDestination(place.formatted_address);
+    if (place?.geometry?.location) {
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      setDestination(`${lat},${lng}`);
     }
   };
 
@@ -46,7 +50,13 @@ function MainPage() {
       alert('Please select both source and destination');
       return;
     }
-    navigate('/directions', { state: { source, destination } });
+    console.log("Hi")
+    console.log("Submitting with source:", source);
+    console.log("Submitting with destination:", destination);
+
+    navigate('/directions', {
+      state: { source, destination }
+    });
   };
 
   const mapUrl = `https://www.google.com/maps/embed/v1/view?key=${apiKey}&center=${currentLocation.lat},${currentLocation.lng}&zoom=14`;
@@ -55,6 +65,7 @@ function MainPage() {
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
+      {/* Left Panel */}
       <div style={{ flex: 1, padding: '4rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
         <h1 style={{ fontSize: '6rem', fontWeight: 'bold', marginBottom: '1rem' }}>SafeWalk</h1>
         <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}><i>"Safer Streets Start Here."</i></p>
@@ -62,7 +73,7 @@ function MainPage() {
         <Autocomplete onLoad={ref => (sourceRef.current = ref)} onPlaceChanged={handleSourceChange}>
           <input
             placeholder="Source"
-            style={{ marginBottom: '1rem', padding: '0.6rem', width: '250px', borderRadius: '50px' , border: '1px solid #ccc'}}
+            style={{ marginBottom: '1rem', padding: '0.6rem', width: '250px', borderRadius: '50px', border: '1px solid #ccc' }}
           />
         </Autocomplete>
 
@@ -73,11 +84,22 @@ function MainPage() {
           />
         </Autocomplete>
 
-        <button onClick={handleSubmit} style={{ padding: '0.6rem 1rem', borderRadius: '50px', backgroundColor: 'rgba(4, 4, 4, 0.95)', color: 'white', border: '1px solid #ccc' }}>
+        <button
+          onClick={handleSubmit}
+          style={{
+            padding: '0.6rem 1rem',
+            borderRadius: '50px',
+            backgroundColor: 'rgba(4, 4, 4, 0.95)',
+            color: 'white',
+            border: '1px solid #ccc',
+            cursor: 'pointer'
+          }}
+        >
           Search
         </button>
       </div>
 
+      {/* Right Panel - Map */}
       <div style={{ flex: 1 }}>
         <iframe
           title="Google Map"

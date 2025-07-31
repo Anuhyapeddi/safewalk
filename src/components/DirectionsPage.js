@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, DirectionsRenderer } from '@react-google-maps/api';
 
@@ -17,48 +17,85 @@ function DirectionsPage() {
     libraries: ['places'],
   });
 
-  const [directions, setDirections] = React.useState(null);
-  const [center, setCenter] = React.useState({ lat: 37.7749, lng: -122.4194 });
-  const [duration, setDuration] = React.useState('');
-  const [distance, setDistance] = React.useState('');
-  const [eta, setETA] = React.useState('');
-  
+  const [directions, setDirections] = useState(null);
+  const [center, setCenter] = useState({ lat: 37.7749, lng: -122.4194 });
+  const [duration, setDuration] = useState('');
+  const [distance, setDistance] = useState('');
+  const [eta, setETA] = useState('');
+  const [safeSteps, setSafeSteps] = useState([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isLoaded && source && destination) {
-      const directionsService = new window.google.maps.DirectionsService();
+      const fetchSafeRoute = async () => {
+        try {
+          // First convert addresses to lat/lng using Geocoding API
+          const geocode = async (place) => {
+            const response = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(place)}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
+            );
+            const data = await response.json();
+            const loc = data.results[0].geometry.location;
+            return `${loc.lat},${loc.lng}`;
+          };
 
-      directionsService.route(
-        {
-          origin: source,
-          destination: destination,
-          travelMode: window.google.maps.TravelMode.WALKING,
-          provideRouteAlternatives: true, 
-        },
-        (result, status) => {
-          if (status === window.google.maps.DirectionsStatus.OK) {
-            setDirections(result);
+          const sourceLatLng = await geocode(source);
+          const destinationLatLng = await geocode(destination);
 
-            const leg = result.routes[0].legs[0];
-            setDuration(leg.duration.text);
-            setDistance(leg.distance.text);
+          const backendResponse = await fetch('http://localhost:8000/route', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              source: sourceLatLng,
+              destination: destinationLatLng,
+              timestamp: new Date().toISOString(),
+            }),
+          });
 
-            const start = leg.start_location;
-            setCenter({ lat: start.lat(), lng: start.lng() });
+          const data = await backendResponse.json();
+          setSafeSteps(data.steps);
+          setDuration(data.summary.duration);
+          setDistance(data.summary.total_distance);
 
-            // ETA Calculation
-            const etaTime = new Date();
-            etaTime.setMinutes(etaTime.getMinutes() + leg.duration.value / 60); // duration.value is in seconds
-            const formattedETA = etaTime.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-            setETA(formattedETA);
-          } else {
-            alert('Directions request failed: ' + status);
+          // Center the map on the first step
+          if (data.steps.length > 0) {
+            const firstStep = data.steps[0].end_location;
+            setCenter({ lat: firstStep.lat, lng: firstStep.lng });
           }
+
+          // Use DirectionsService to render the path visually
+          const directionsService = new window.google.maps.DirectionsService();
+          directionsService.route(
+            {
+              origin: source,
+              destination: destination,
+              travelMode: window.google.maps.TravelMode.WALKING,
+            },
+            (result, status) => {
+              if (status === window.google.maps.DirectionsStatus.OK) {
+                setDirections(result);
+
+                const leg = result.routes[0].legs[0];
+                const etaTime = new Date();
+                etaTime.setMinutes(etaTime.getMinutes() + leg.duration.value / 60);
+                const formattedETA = etaTime.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+                setETA(formattedETA);
+              } else {
+                alert('Google directions fetch failed: ' + status);
+              }
+            }
+          );
+        } catch (error) {
+          console.error('Failed to fetch safe route:', error);
+          alert('Something went wrong while fetching the route.');
         }
-      );
+      };
+
+      fetchSafeRoute();
     }
   }, [isLoaded, source, destination]);
 
@@ -103,6 +140,35 @@ function DirectionsPage() {
           <strong>Walk Time:</strong> {duration} <br />
           <strong>Distance:</strong> {distance} <br />
           <strong>ETA:</strong> {eta}
+        </div>
+      )}
+
+      {/* Safety Steps */}
+      {safeSteps.length > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '10px',
+            left: '10px',
+            zIndex: 2,
+            padding: '1rem',
+            maxHeight: '30vh',
+            overflowY: 'auto',
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            borderRadius: '10px',
+            boxShadow: '0px 0px 10px rgba(0,0,0,0.1)',
+            fontSize: '0.9rem',
+            width: '300px',
+          }}
+        >
+          <h3 style={{ marginBottom: '0.5rem' }}>Steps & Safety</h3>
+          {safeSteps.map((step, index) => (
+            <div key={index} style={{ marginBottom: '0.6rem' }}>
+              <div dangerouslySetInnerHTML={{ __html: step.instruction }} />
+              <div><strong>Distance:</strong> {step.distance}</div>
+              <div><strong>Safety Score:</strong> {step.safety_score}</div>
+            </div>
+          ))}
         </div>
       )}
 
